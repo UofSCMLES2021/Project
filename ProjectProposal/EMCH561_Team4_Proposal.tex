@@ -1,0 +1,91 @@
+%%% Research Diary - Entry
+%%% Template by Mikhail Klassen, April 2013
+%%% 
+\documentclass[11pt,letterpaper]{article}
+
+\newcommand{\workingDate}{\today}
+\newcommand{\userName}{EMCH 561}
+\newcommand{\institution}{University of South Carolina}
+\usepackage{siunitx}
+\usepackage{Proposal}
+\usepackage{hyperref}
+\usepackage{indentfirst}
+\usepackage[backend=biber, style=ieee]{biblatex}
+\addbibresource{references.bib}
+
+% To add your university logo to the upper right, simply
+% upload a file named "logo.png" using the files menu above.
+
+\begin{document}
+\univlogo
+
+\title{EMCH 561 Team 4 Proposal}
+
+{\noindent\Huge EMCH 561 Project Proposal}\\[5mm]
+By Jack Hannum, Claud Boyd, Jarret Peskar, Braden Priddy, and Zhymir Thompson
+
+
+\section*{Introduction}
+
+3-phase Electric motors can be driven by an inverter, which both supplies the power to control the motor, and provides the means to control the motor's speed and torque. 
+For speed control of an induction motor, the variable under control are the phase voltages.
+Typically, feedback control requires the measurement of the control variable, which is subtracted from a reference, creating an error signal that can be fed to a controller.
+In the motor control context, however, the phase voltages typically are not measured due to the expense and complexity of doing so. 
+Rotor speed is a much more easily measured quantity, and this is typically what is measured in practical applications of electric motors. 
+To generate the error signal required for feedback control of the motor, a model relating rotor speed to phase voltage can be employed.
+The creation of a data-driven model between rotor speed and phase voltage is the objective of this project. 
+
+\section{Data}
+
+Marius Stender, Oliver Wallscheid, and Joachim Bocker at Paderborn University in Germany have created a dataset by adding instrumentation to an inverter as it drives a 3-phase induction motor \cite{Stender2020-qi}\cite{Stender_undated-rx}. The data is available as a Comma Separated Values (CSV) file with 26 dimensions:
+\begin{enumerate}
+	\item Motor Speed [RPM]
+	\item DC-link Voltage [V]
+	\item Previous Step DC-link Voltage [V]
+	\item Two Steps Previous Step DC-link Voltage [V]
+	\item Three Steps Previous Step DC-link Voltage [V]
+	\item Phase-A Current [A]
+	\item Phase-B Current [A]
+	\item Phase-C Current [A]
+	\item Previous Step Phase-A Current [A]
+	\item Previous Step Phase-B Current [A]
+	\item Previous Step Phase-C Current [A]
+	\item Two steps Previous Phase-A Current [A]
+	\item Two steps Previous Phase-B Current [A]
+	\item Two steps Previous Phase-C Current [A]
+	\item Three steps Previous Phase-A Current [A]
+	\item Three steps Previous Phase-B Current [A]
+	\item Three steps Previous Phase-C Current [A]
+	\item Two steps Previous Phase-A Duty Cycle [0-1]
+	\item Two steps Previous Phase-B Duty Cycle [0-1]
+	\item Two steps Previous Phase-C Duty Cycle [0-1]
+	\item Three steps Previous Phase-A Duty Cycle [0-1]
+	\item Three steps Previous Phase-B Duty Cycle [0-1]
+	\item Three steps Previous Phase-C Duty Cycle [0-1]
+	\item Previous Step Phase-A Voltage [V]
+	\item Previous Step Phase-B Voltage [V]
+	\item Previous Step Phase-C Voltage [V]
+\end{enumerate}
+
+The data was sampled at \SI{10}{\kHz}, which for a motor spinning at approximately \SI{3000}{RPM}, or \SI{50}{\Hz}, should enable complete recreation of motor dynamics, and switching converter dynamics up to \SI{5}{\kHz} per Nyquist's theorem.
+The inverter switched at \SI{10}{\kHz}, which means that some converter dynamics will be lost from sampling; this should not be an issue, as the model to be created should not be dependent on accurate modeling of individual switching periods. 
+
+\section{Type of Machine Learning to be Applied}
+
+The type of Machine Learning to be applied to this problem is a supervised regression algorithm, since a labeled training set has been provided, and a number (Phase-A voltage, which for a balanced 3-phase motor can determine the voltages of the remaining phases) is to be predicted. 
+
+\section{Training Type}
+
+This is a batch training problem, as all available data will be used to train the regression model, and the dataset is sufficiently small (\SI{102}{MB}) to fit in memory without requiring Mini-batching or stochastic regression.
+
+\section{Instance or Model Based Problem}
+
+This is a model based problem, as an optimal model will be determined from the training data, and new data will be predicted using this model.
+
+\section{Algorithm Type}
+
+The algorithm to be applied is a regression algorithm, potentially linear regression using gradient descent.
+
+\printbibliography
+
+\end{document}
