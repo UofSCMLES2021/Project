@@ -7,6 +7,7 @@ Created on Mon Jun 28 12:35:10 2021
 
 import IPython as IP
 IP.get_ipython().magic("reset -sf")
+IP.get_ipython().magic("%matplotlib")
 
 #import modules native to python
 import random as random
@@ -40,6 +41,7 @@ plt.ylim(0,10)
 plt.show()
 
 
+
 #Import and format data
 df = pd.read_csv('Inverter_Data_Set.csv')
 
@@ -47,7 +49,6 @@ df = pd.read_csv('Inverter_Data_Set.csv')
 df_cols = ['motor speed (min^-1)', 'DC-link voltage (V)', 'DC-link voltage 1 sampling step before in (V)', 'DC-link voltage 2 sampling steps before in V', 'DC-link voltage 3 sampling steps before in V', 'Phase current of phase a in A', 'Phase current of phase b in A', 'Phase current of phase c in A', 'Phase current of phase a 1 sampling step before in A',  'Phase current of phase b 1 sampling step before in A','Phase current of phase c 1 sampling step before in A', 'Phase current of phase a  sampling steps before in A', 'Phase current of phase b 2 sampling steps before in A', 'Phase current of phase c 2 sampling steps before in A', 'Phase current of phase a 3 sampling steps before in A', 'Phase current of phase b 3 sampling steps before in A', 'Phase current of phase c 3 sampling steps before in A', 'Duty cycle of phase a 2 sampling steps before', 'Duty cycle of phase b 2 sampling steps before', 'Duty cycle of phase c 2 sampling steps before', 'Duty cycle of phase a 3 sampling steps before', 'Duty cycle of phase b 3 sampling steps before', 'Duty cycle of phase c 3 sampling steps before', 'Measured voltage of phase a 1 sampling step before in V', 'Measured voltage of phase b 1 sampling step before in V', 'Measured voltage of phase c 1 sampling step before in V']
 
 df.columns = df_cols
-plt.close('all')
 
 #print names of all the column headings
 for cols in df.columns:
@@ -105,7 +106,8 @@ model = sk.pipeline.Pipeline((("poly_features", sk.preprocessing.PolynomialFeatu
 
 train_errors, val_errors = [], []
 for i in range(1,len(X_train)):
-    # print(i)
+    if i % 1000 == 0: 
+        print(i)
     model.fit(X_train[:i], Y_train[:i])
     y_train_predict = model.predict(X_train[:i])
     y_val_predict = model.predict(X_val)
@@ -138,7 +140,7 @@ plt.ylabel('mean squared error')
 plt.grid()
 plt.tight_layout()
 plt.legend(framealpha = 1)
-
+plt.show()
 
 
 
