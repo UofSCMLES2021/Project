@@ -23,7 +23,7 @@ def plot_corr_matrix(dataframe: pd.DataFrame) -> None:
 
 
 if __name__ == '__main__':
-    FILENAME = 'Inverter Data Set_csv.csv'
+    FILENAME = 'Inverter_Data_Set.csv'
     COLS = ['motor speed (min^-1)', 'DC-link voltage (V)', 'DC-link voltage 1 sampling step before in (V)', 'DC-link '
                                                                                                             'voltage '
                                                                                                             '2 '
