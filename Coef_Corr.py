@@ -25,6 +25,7 @@ import seaborn as sn
 
 df = pd.read_csv('Inverter Data Set.csv')
 plt.close('all')
+idx = df.columns
 df_cols = ['motor speed (min^-1)', 'DC-link voltage (V)', 'DC-link voltage 1 sampling step before in (V)', 'DC-link voltage 2 sampling steps before in V', 'DC-link voltage 3 sampling steps before in V', 'Phase current of phase a in A', 'Phase current of phase b in A', 'Phase current of phase c in A', 'Phase current of phase a 1 sampling step before in A',  'Phase current of phase b 1 sampling step before in A','Phase current of phase c 1 sampling step before in A', 'Phase current of phase a  sampling steps before in A', 'Phase current of phase b 2 sampling steps before in A', 'Phase current of phase c 2 sampling steps before in A', 'Phase current of phase a 3 sampling steps before in A', 'Phase current of phase b 3 sampling steps before in A', 'Phase current of phase c 3 sampling steps before in A', 'Duty cycle of phase a 2 sampling steps before', 'Duty cycle of phase b 2 sampling steps before', 'Duty cycle of phase c 2 sampling steps before', 'Duty cycle of phase a 3 sampling steps before', 'Duty cycle of phase b 3 sampling steps before', 'Duty cycle of phase c 3 sampling steps before', 'Measured voltage of phase a 1 sampling step before in V', 'Measured voltage of phase b 1 sampling step before in V', 'Measured voltage of phase c 1 sampling step before in V']
 df.columns = df_cols
 
@@ -52,7 +53,7 @@ def find_coef(col_name, coef_target):
     
     for i in range(target_ar.shape[0]):
         if abs(target_ar[i]) >= coef_target and target_ar[i] < 1:
-            print(target.columns[i], '   ', target_ar[i])   
+            print(idx[i] ,target.columns[i], ' ', target_ar[i])   
     
 
 #graph('motor speed (min^-1)')
