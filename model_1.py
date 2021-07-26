@@ -105,7 +105,8 @@ model = sk.pipeline.Pipeline((("poly_features", sk.preprocessing.PolynomialFeatu
 # =============================================================================
 
 train_errors, val_errors = [], []
-for i in range(1,len(X_train)):
+# for i in range(1,len(X_train)):
+for i in range(1,10000):
     if i % 1000 == 0: 
         print(i)
     model.fit(X_train[:i], Y_train[:i])
@@ -124,13 +125,11 @@ for i in range(1,len(X_train)):
         plt.scatter(X_val,Y_val, s = 2, marker = 's', label = 'data in validation set')
         y_model = model.predict(np.expand_dims(X_model, axis = 1))
         plt.plot(X_model, y_model, 'r--', label='model')
-        plt.xlabel('X')
-        plt.ylabel('Y')
+        plt.xlabel('Motor Speed [RPM]')
+        plt.ylabel('Phase A Voltage [V]')
         plt.grid(True)
         plt.legend(loc=2)
         plt.show()
-
-
 
 plt.figure()
 plt.plot(train_errors, '--', label = 'training error')
