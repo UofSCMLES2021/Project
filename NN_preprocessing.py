@@ -3,6 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sklearn as sk
 import seaborn as sn
+import scipy as sp
+from scipy import signal
+from scipy.signal import butter, freqz
 from sklearn.metrics import mean_squared_error, hinge_loss
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split, learning_curve
@@ -78,9 +81,8 @@ if __name__ == '__main__':
     V_ab_RMS = RMS(V_ab,len(V_ab))
     
     # Break into separate runs by RPM
-    r3000 = range(0,59951)
-    # fe = 3000* p / 120
-    fe = 60
+    r3000 = range(50,59951)
+    fe = 3000 * p / 120
     r500 = range(59952,144883)
     r1500 = range(144885,199554)
     r3000_2 = range(199555,224534)
@@ -90,14 +92,11 @@ if __name__ == '__main__':
     df1500 = df.iloc[r1500,:]
     df3k2 = df.iloc[r3000_2,:]
     df2500 = df.iloc[r2500,:]
-    wt3k = np.array(range(1,len(r3000)),dtype=(float))
-    for i in range(0,len(r3000)-1):
+    wt3k = np.array(range(50,59951),dtype=(float))
+    tt = wt3k
+    for i in range(50-50,59951-50):
         wt3k[i] = 2*np.pi*fe*float(i*Ts)
-    
-    
-    # Plot correlation matrix
-    plot_corr_matrix(df)
-    plt.show()
+        tt[i] = float(i*Ts)
 
     # x_values, y_values = np.asarray(df.loc[:, ['motor speed (min^-1)', 'DC-link voltage (V)', 'DC-link voltage 1 sampling step before in (V)', 'DC-link '
     #                                                                                                         'voltage '
@@ -157,7 +156,7 @@ if __name__ == '__main__':
     I_c_arr = np.array(range(1,len(df3k[:])))
     delta = 0
 
-    for i in range(1,len(df3k[:])-1):
+    for i in range(50,len(df3k[:])-1):
         # Create an array of each quantity and its values 1, 2 and 3 steps before
         V_a[i] = np.array(df3k.loc[i,'Measured voltage of phase a 1 sampling step before in V'])
         V_b[i] = np.array(df3k.loc[i,'Measured voltage of phase b 1 sampling step before in V'])
@@ -174,31 +173,58 @@ if __name__ == '__main__':
     I_b_rms = np.array(RMS(I_b_arr,len(df3k)))[len(RMS(I_a_arr,len(df3k)))-1]
     I_c_rms = np.array(RMS(I_c_arr,len(df3k)))[len(RMS(I_a_arr,len(df3k)))-1]
     
-    # Take the dq0 transform of the voltages and currents
-    V_d,  V_q,  V_z = ClarkePark.abc_to_dq0(V_a, V_b, V_c, wt3k, delta)
-    I_d,  I_q,  I_z = ClarkePark.abc_to_dq0(I_a_arr, I_b_arr, I_c_arr, wt3k, delta)
+    # Run the 3 phase voltages and currents through a Low Pass Filter
+    filter_order = 10
+    fc = 0.05
+    sos = signal.butter(filter_order,fc, 'lp', output='sos')
+    filtered = signal.sosfilt(sos, V_a)
+    
+    # Compare the filtered and unfiltered voltage
+    plt.figure()
+    plt.plot(V_a,label=r'$V_ab$ Unfiltered')
+    plt.plot(filtered,label=r'$V_ab$ filtered')
+    plt.title('Phase A Voltage')
+    plt.xlabel('Sample Number')
+    plt.ylabel(r'$V_{a}$ [V]')
+    plt.xlim([0,4*fe])
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('figures/VaFilter.png')
+    
+    mean_Va = np.mean(V_a)
+    mean_Vb = np.mean(V_b)
+    mean_Vc = np.mean(V_c)
+    mean_Ia = np.mean(I_a_arr)
+    mean_Ib = np.mean(I_b_arr)
+    mean_Ic = np.mean(I_c_arr)
+    V_a = filtered - mean_Va
+    V_b = signal.sosfilt(sos, V_b) - mean_Vb
+    V_c = signal.sosfilt(sos, V_c) - mean_Vc
+    I_a_arr = signal.sosfilt(sos, I_a_arr) - mean_Ia
+    I_b_arr = signal.sosfilt(sos, I_b_arr) - mean_Ib
+    I_c_arr = signal.sosfilt(sos, I_c_arr) - mean_Ic
     
     # Plot the 3-phase Voltages and Currents
     plt.figure()
-    plt.plot(V_a,label=r'$V_ab$')
-    plt.plot(V_b,label=r'$V_bc$')
-    plt.plot(V_c,label=r'$V_ca$')
+    plt.plot(V_a,label=r'$V_{ab}$')
+    plt.plot(V_b,label=r'$V_{bc}$')
+    plt.plot(V_c,label=r'$V_{ca}$')
     plt.title('3-Phase Voltage')
     plt.xlabel('Sample Number')
     plt.ylabel(r'$V_{3-\Phi}$ [V]')
-    plt.xlim([0,700])
+    plt.xlim([0,4*fe])
     plt.legend()
     plt.grid(True)
     plt.savefig('figures/V3p.png')
     
     plt.figure()
-    plt.plot(V_a,label=r'$I_a$')
-    plt.plot(V_b,label=r'$I_b$')
-    plt.plot(V_c,label=r'$I_c$')
+    plt.plot(I_a_arr,label=r'$I_a$')
+    plt.plot(I_b_arr,label=r'$I_b$')
+    plt.plot(I_c_arr,label=r'$I_c$')
     plt.title('3-Phase Current')
     plt.xlabel('Sample Number')
     plt.ylabel(r'$I_{3-\Phi}$ [V]')
-    plt.xlim([0,700])
+    plt.xlim([0,4*fe])
     plt.legend()
     plt.grid(True)
     plt.savefig('figures/I3p.png')  
@@ -212,6 +238,10 @@ if __name__ == '__main__':
     plt.ylabel(r'$V_{L-L RMS}$ [V]')
     plt.savefig('figures/RMSV_a.png',dpi=500)
     
+     # Take the dq0 transform of the voltages and currents
+    V_d,  V_q,  V_z = ClarkePark.abc_to_dq0(V_a, V_b, V_c, wt3k[1:len(V_a)+1], delta)
+    I_d,  I_q,  I_z = ClarkePark.abc_to_dq0(I_a_arr, I_b_arr, I_c_arr, wt3k[1:len(I_a)+1], delta)
+    
     # Plot the dq0 Values
     plt.figure()
     plt.plot(V_d,label=r'$V_d$')
@@ -219,7 +249,7 @@ if __name__ == '__main__':
     plt.plot(V_z,label=r'$V_0$')
     plt.title('dq0 Voltage')
     plt.xlabel('Sample Number')
-    plt.ylabel('[V]')
+    plt.ylabel('Voltage[V]')
     plt.xlim([0,700])
     plt.legend()
     plt.grid(True)
@@ -231,7 +261,7 @@ if __name__ == '__main__':
     plt.plot(I_z,label=r'$I_0$')
     plt.title('dq0 Current')
     plt.xlabel('Sample Number')
-    plt.ylabel('[A]')
+    plt.ylabel('Current [A]')
     plt.xlim([0,700])
     plt.legend()
     plt.grid(True)
@@ -242,7 +272,19 @@ if __name__ == '__main__':
                                                  'Phase current of phase a 2 sampling steps before in A',
                                                  'Phase current of phase a 3 sampling steps before in A',
                                                  'motor speed (min^-1)',
-                                                 ]])[1:len(df3k)], np.asarray(V_a)
+                                                 ]])[1:len(df3k)], (np.asarray(V_a) + mean_Va)
+    xb_values, yb_values = np.asarray(df3k.loc[:, ['Phase current of phase b in A', 
+                                                 'Phase current of phase b 1 sampling step before in A',
+                                                 'Phase current of phase b 2 sampling steps before in A',
+                                                 'Phase current of phase b 3 sampling steps before in A',
+                                                 'motor speed (min^-1)',
+                                                 ]])[1:len(df3k)], (np.asarray(V_b) + mean_Vb)
+    xc_values, yc_values = np.asarray(df3k.loc[:, ['Phase current of phase c in A', 
+                                                 'Phase current of phase c 1 sampling step before in A',
+                                                 'Phase current of phase c 2 sampling steps before in A',
+                                                 'Phase current of phase c 3 sampling steps before in A',
+                                                 'motor speed (min^-1)',
+                                                 ]])[1:len(df3k)], (np.asarray(V_c) + mean_Vc)
     
     # plt.figure()
     # plt.plot(y_values)
@@ -260,14 +302,33 @@ if __name__ == '__main__':
     # plt.show()
     
     # Create model and train on data
-    model = MLPRegressor(hidden_layer_sizes=(32, 32, 32, 32), max_iter=50)
+    model = MLPRegressor(hidden_layer_sizes=(32,32,32,32), max_iter=100000, early_stopping=True)
     # x_values, y_values = np.asarray(df3k)[1:len(df3k)], np.asarray(V_a)
     
-    print('Input shape: {}'.format(x_values.shape))
-    print('Output shape: {}'.format(y_values.shape))
+    # print('Input shape: {}'.format(x_values.shape))
+    # print('Output shape: {}'.format(y_values.shape))
     train_x, test_x, train_y, test_y = train_test_split(x_values, y_values)
     learning_curve(model, X=x_values, y=y_values, train_sizes=([0.1, 0.2, 0.5, 0.8, 0.9]))
     model.fit(train_x, train_y)
+    print('\nPhase a\n')
+    print('Model Score: {}'.format(model.score(test_x, test_y)))
+    y_pred = model.predict(test_x)
+    print('Training MSE: {}'.format(mean_squared_error(train_y, model.predict(train_x))))
+    print('MSE: {}'.format(mean_squared_error(test_y, y_pred)))
+    
+    train_x, test_x, train_y, test_y = train_test_split(xb_values, yb_values)
+    learning_curve(model, X=x_values, y=y_values, train_sizes=([0.1, 0.2, 0.5, 0.8, 0.9]))
+    model.fit(train_x, train_y)
+    print('\nPhase b\n')
+    print('Model Score: {}'.format(model.score(test_x, test_y)))
+    y_pred = model.predict(test_x)
+    print('Training MSE: {}'.format(mean_squared_error(train_y, model.predict(train_x))))
+    print('MSE: {}'.format(mean_squared_error(test_y, y_pred)))
+    
+    train_x, test_x, train_y, test_y = train_test_split(xc_values, yc_values)
+    learning_curve(model, X=x_values, y=y_values, train_sizes=([0.1, 0.2, 0.5, 0.8, 0.9]))
+    model.fit(train_x, train_y)
+    print('\nPhase c\n')
     print('Model Score: {}'.format(model.score(test_x, test_y)))
     y_pred = model.predict(test_x)
     print('Training MSE: {}'.format(mean_squared_error(train_y, model.predict(train_x))))
