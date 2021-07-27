@@ -26,6 +26,7 @@ def RMS(val, N):
      return (pd.DataFrame(abs(val)**2).rolling(N).mean()) **0.5
 
 if __name__ == '__main__':
+    plt.close('all')
     #%% Import Inverter Dataset
     FILENAME = 'Inverter_Data_Set.csv'
     COLS = ['motor speed (min^-1)', 'DC-link voltage (V)', 'DC-link voltage 1 sampling step before in (V)', 'DC-link '
@@ -67,6 +68,7 @@ if __name__ == '__main__':
     Ts = 1/fs       # Sampling Period
     N = len(df[:])  # Total Number of Samples
     T = N*Ts        # Total Sampling Duration
+    p = 4           # Induction Machine Poles
     
 
     # Get desired input and outputs
@@ -77,6 +79,8 @@ if __name__ == '__main__':
     
     # Break into separate runs by RPM
     r3000 = range(0,59951)
+    # fe = 3000* p / 120
+    fe = 60
     r500 = range(59952,144883)
     r1500 = range(144885,199554)
     r3000_2 = range(199555,224534)
@@ -88,49 +92,41 @@ if __name__ == '__main__':
     df2500 = df.iloc[r2500,:]
     wt3k = np.array(range(1,len(r3000)),dtype=(float))
     for i in range(0,len(r3000)-1):
-        wt3k[i] = float(i*Ts)
+        wt3k[i] = 2*np.pi*fe*float(i*Ts)
     
     
     # Plot correlation matrix
     plot_corr_matrix(df)
     plt.show()
 
-    # Create model and train on data
-    model = MLPRegressor(hidden_layer_sizes=(32, 32, 32, 32), max_iter=50)
-    x_values, y_values = np.asarray(df), np.asarray(V_ab)
-    x_values, y_values = np.asarray(df.loc[:, ['motor speed (min^-1)', 'DC-link voltage (V)', 'DC-link voltage 1 sampling step before in (V)', 'DC-link '
-                                                                                                            'voltage '
-                                                                                                            '2 '
-                                                                                                            'sampling '
-                                                                                                            'steps '
-                                                                                                            'before '
-                                                                                                            'in V',
-            'DC-link voltage 3 sampling steps before in V', 'Phase current of phase a in A', 'Phase current of phase '
-                                                                                              'b in A', 'Phase current '
-                                                                                                        'of phase c in '
-                                                                                                        'A',
-            'Phase current of phase a 1 sampling step before in A', 'Phase current of phase b 1 sampling step before '
-                                                                    'in A', 'Phase current of phase c 1 sampling step '
-                                                                            'before in A', 'Phase current of phase a '
-                                                                                            '2 sampling steps before in '
-                                                                                            'A', 'Phase current of '
-                                                                                                'phase b 2 sampling '
-                                                                                                'steps before in A',
-            'Phase current of phase c 2 sampling steps before in A', 'Phase current of phase a 3 sampling steps '
-                                                                      'before in A', 'Phase current of phase b 3 '
-                                                                                    'sampling steps before in A',
-            'Phase current of phase c 3 sampling steps before in A', 'Duty cycle of phase a 2 sampling steps before',
-            'Duty cycle of phase b 2 sampling steps before', 'Duty cycle of phase c 2 sampling steps before',
-            'Duty cycle of phase a 3 sampling steps before', 'Duty cycle of phase b 3 sampling steps before',
-            'Duty cycle of phase c 3 sampling steps before',  'Measured voltage of phase b 1 sampling step before '
-                                                                  'in V', 'Measured voltage of phase c 1 sampling '
-                                                                          'step before in V']]), np.asarray(V_ab)
-    # x_values, y_values = np.asarray(df.loc[:, ['Phase current of phase a in A',
-    #                                            'Phase current of phase a  sampling steps before in A',
-    #                                            'Phase current of phase a 1 sampling step before in A', 'motor speed ('
-    #                                                                                                 'min^-1)']]), \
-    #                      np.asarray(V_ab)
-    y_values = y_values.squeeze(axis=1)
+    # x_values, y_values = np.asarray(df.loc[:, ['motor speed (min^-1)', 'DC-link voltage (V)', 'DC-link voltage 1 sampling step before in (V)', 'DC-link '
+    #                                                                                                         'voltage '
+    #                                                                                                         '2 '
+    #                                                                                                         'sampling '
+    #                                                                                                         'steps '
+    #                                                                                                         'before '
+    #                                                                                                         'in V',
+    #         'DC-link voltage 3 sampling steps before in V', 'Phase current of phase a in A', 'Phase current of phase '
+    #                                                                                           'b in A', 'Phase current '
+    #                                                                                                     'of phase c in '
+    #                                                                                                     'A',
+    #         'Phase current of phase a 1 sampling step before in A', 'Phase current of phase b 1 sampling step before '
+    #                                                                 'in A', 'Phase current of phase c 1 sampling step '
+    #                                                                         'before in A', 'Phase current of phase a '
+    #                                                                                         '2 sampling steps before in '
+    #                                                                                         'A', 'Phase current of '
+    #                                                                                             'phase b 2 sampling '
+    #                                                                                             'steps before in A',
+    #         'Phase current of phase c 2 sampling steps before in A', 'Phase current of phase a 3 sampling steps '
+    #                                                                   'before in A', 'Phase current of phase b 3 '
+    #                                                                                 'sampling steps before in A',
+    #         'Phase current of phase c 3 sampling steps before in A', 'Duty cycle of phase a 2 sampling steps before',
+    #         'Duty cycle of phase b 2 sampling steps before', 'Duty cycle of phase c 2 sampling steps before',
+    #         'Duty cycle of phase a 3 sampling steps before', 'Duty cycle of phase b 3 sampling steps before',
+    #         'Duty cycle of phase c 3 sampling steps before',  'Measured voltage of phase b 1 sampling step before '
+    #                                                               'in V', 'Measured voltage of phase c 1 sampling '
+    #                                                                       'step before in V']]), np.asarray(V_ab)
+    
     
     #%% Plot Features
     # for i in range(1,len(COLS)):
@@ -149,8 +145,9 @@ if __name__ == '__main__':
     plt.xlabel('Sample Number')
     plt.ylabel(r'V_{L-L RMS}')
     plt.savefig('figures/MotorRPM.png',dpi=500)
-    #%% Preprocessing    
+    #%% Preprocessing
     # Take the RMS of the Voltages and Currents
+    
     
     V_a = np.array(range(1,len(df3k[:])))
     V_b = np.array(range(1,len(df3k[:])))
@@ -178,7 +175,34 @@ if __name__ == '__main__':
     I_c_rms = np.array(RMS(I_c_arr,len(df3k)))[len(RMS(I_a_arr,len(df3k)))-1]
     
     # Take the dq0 transform of the voltages and currents
-    d,  q,  z = ClarkePark.abc_to_dq0(V_a, V_b, V_c, wt3k, delta)
+    V_d,  V_q,  V_z = ClarkePark.abc_to_dq0(V_a, V_b, V_c, wt3k, delta)
+    I_d,  I_q,  I_z = ClarkePark.abc_to_dq0(I_a_arr, I_b_arr, I_c_arr, wt3k, delta)
+    
+    # Plot the 3-phase Voltages and Currents
+    plt.figure()
+    plt.plot(V_a,label=r'$V_ab$')
+    plt.plot(V_b,label=r'$V_bc$')
+    plt.plot(V_c,label=r'$V_ca$')
+    plt.title('3-Phase Voltage')
+    plt.xlabel('Sample Number')
+    plt.ylabel(r'$V_{3-\Phi}$ [V]')
+    plt.xlim([0,700])
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('figures/V3p.png')
+    
+    plt.figure()
+    plt.plot(V_a,label=r'$I_a$')
+    plt.plot(V_b,label=r'$I_b$')
+    plt.plot(V_c,label=r'$I_c$')
+    plt.title('3-Phase Current')
+    plt.xlabel('Sample Number')
+    plt.ylabel(r'$I_{3-\Phi}$ [V]')
+    plt.xlim([0,700])
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('figures/I3p.png')  
+    
 
     # Plot the RMS Values
     plt.figure()
@@ -188,29 +212,73 @@ if __name__ == '__main__':
     plt.ylabel(r'$V_{L-L RMS}$ [V]')
     plt.savefig('figures/RMSV_a.png',dpi=500)
     
+    # Plot the dq0 Values
+    plt.figure()
+    plt.plot(V_d,label=r'$V_d$')
+    plt.plot(V_q,label=r'$V_q$')
+    plt.plot(V_z,label=r'$V_0$')
+    plt.title('dq0 Voltage')
+    plt.xlabel('Sample Number')
+    plt.ylabel('[V]')
+    plt.xlim([0,700])
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('figures/Vdq0.png',dpi=500)
     
     plt.figure()
-    plt.plot(y_values)
-    plt.show()
-    plt.figure()
-    plt.subplot(211)
-    plt.scatter(x_values[:, 0], y_values)
-    plt.xlabel('Phase current of phase a in A')
-    plt.ylabel('voltage')
-    plt.subplot(212)
-    plt.scatter(x_values[:, 1], y_values)
-    plt.xlabel('motor speed (min^-1)')
-    plt.ylabel('voltage')
-    plt.title('Phase Voltage as a Function of Motor Speed')
-    plt.show()
+    plt.plot(I_d,label=r'$I_d$')
+    plt.plot(I_q,label=r'$I_q$')
+    plt.plot(I_z,label=r'$I_0$')
+    plt.title('dq0 Current')
+    plt.xlabel('Sample Number')
+    plt.ylabel('[A]')
+    plt.xlim([0,700])
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('figures/Idq0.png',dpi=500)
     
-    # print('Input shape: {}'.format(x_values.shape))
-    # print('Output shape: {}'.format(y_values.shape))
-    # train_x, test_x, train_y, test_y = train_test_split(x_values, y_values)
-    # learning_curve(model, X=x_values, y=y_values, train_sizes=([0.1, 0.2, 0.5, 0.8, 0.9]))
-    # model.fit(train_x, train_y)
-    # print('Model Score: {}'.format(model.score(test_x, test_y)))
-    # y_pred = model.predict(test_x)
-    # print('Training MSE: {}'.format(mean_squared_error(train_y, model.predict(train_x))))
-    # print('MSE: {}'.format(mean_squared_error(test_y, y_pred)))
+    x_values, y_values = np.asarray(df3k.loc[:, ['Phase current of phase a in A', 
+                                                 'Phase current of phase a 1 sampling step before in A',
+                                                 'Phase current of phase a 2 sampling steps before in A',
+                                                 'Phase current of phase a 3 sampling steps before in A',
+                                                 'motor speed (min^-1)',
+                                                 ]])[1:len(df3k)], np.asarray(V_a)
+    
+    # plt.figure()
+    # plt.plot(y_values)
+    # plt.show()
+    # plt.figure()
+    # plt.subplot(211)
+    # plt.scatter(x_values[:, 0], y_values)
+    # plt.xlabel('Phase current of phase a in A')
+    # plt.ylabel('voltage')
+    # plt.subplot(212)
+    # plt.scatter(x_values[:, 1], y_values)
+    # plt.xlabel('motor speed (min^-1)')
+    # plt.ylabel('voltage')
+    # plt.title('Phase Voltage as a Function of Motor Speed')
+    # plt.show()
+    
+    # Create model and train on data
+    model = MLPRegressor(hidden_layer_sizes=(32, 32, 32, 32), max_iter=50)
+    # x_values, y_values = np.asarray(df3k)[1:len(df3k)], np.asarray(V_a)
+    
+    print('Input shape: {}'.format(x_values.shape))
+    print('Output shape: {}'.format(y_values.shape))
+    train_x, test_x, train_y, test_y = train_test_split(x_values, y_values)
+    learning_curve(model, X=x_values, y=y_values, train_sizes=([0.1, 0.2, 0.5, 0.8, 0.9]))
+    model.fit(train_x, train_y)
+    print('Model Score: {}'.format(model.score(test_x, test_y)))
+    y_pred = model.predict(test_x)
+    print('Training MSE: {}'.format(mean_squared_error(train_y, model.predict(train_x))))
+    print('MSE: {}'.format(mean_squared_error(test_y, y_pred)))
+    
+    # Plot prediction vs target
+    # plt.figure()
+    # plt.scatter(test_x,test_y,label='Measured Data')
+    # plt.plot(test_x,y_pred,'--'label='Prediction')
+    # plt.xlabel('')
+    # plt.ylabel('')
+    # plt.title('Measured Data vs Predicted Values')
+    
 
